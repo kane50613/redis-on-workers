@@ -7,6 +7,7 @@
     "build": "tsup",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "files": ["dist", "package.json", "README.md", "LICENSE"],
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
