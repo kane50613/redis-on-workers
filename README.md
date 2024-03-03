@@ -1,4 +1,4 @@
-# redis-on-worker
+# redis-on-workers
 
 Connect to your Redis server using `cloudflare:sockets`.
 
@@ -7,7 +7,7 @@ This package is designed to work with Cloudflare Workers, but it can also be use
 ## Installation
 
 ```sh
-npm install redis-on-worker
+npm install redis-on-workers
 ```
 
 ## Usage
@@ -17,7 +17,7 @@ npm install redis-on-worker
 This is the minimal example to connect to a Redis server.
 
 ```ts
-import { createRedis } from "redis-on-worker";
+import { createRedis } from "redis-on-workers";
 
 const redis = createRedis({
   url: "redis://<username>:<password>@<host>:<port>",
@@ -35,7 +35,7 @@ console.log(value); // bar
 This is useful if you want to store binary data. For example, you can store protobuf messages in Redis.
 
 ```ts
-import { createRedis } from "redis-on-worker";
+import { createRedis } from "redis-on-workers";
 
 const redis = createRedis({
   url: "redis://<username>:<password>@<host>:<port>",

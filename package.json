@@ -1,5 +1,5 @@
 {
-  "name": "redis-on-worker",
+  "name": "redis-on-workers",
   "version": "0.1.0",
   "description": "Connect to your Redis server using cloudflare:sockets",
   "main": "index.js",
