@@ -4,18 +4,16 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    # Service containers to run with `container-job`
     services:
-      # Label used to access the service container
       redis:
-        # Docker Hub image
         image: redis
-        # Set health checks to wait until redis has started
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+        ports:
+          - 6379:6379
 
     steps:
     - uses: actions/checkout@v4
@@ -44,7 +42,7 @@ jobs:
           ${{ runner.os }}-pnpm-store-
 
     - name: Install dependencies
-      run: pnpm install
+      run: pnpm install --frozen-lockfile
 
     - name: Run tests
       run: pnpm test
