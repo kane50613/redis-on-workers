@@ -2,20 +2,6 @@ import { connect } from "@arrowood.dev/socket";
 import { expect, test } from "vitest";
 import { createRedis } from "./create-redis";
 
-// node runtime doesn't have Promise.withResolvers yet
-if (!Promise.withResolvers) {
-  Promise.withResolvers = <T>() => {
-    const result = {} as WithResolvers<T>;
-
-    result.promise = new Promise<T>((resolve, reject) => {
-      result.resolve = resolve;
-      result.reject = reject;
-    });
-
-    return result;
-  };
-}
-
 test("Redis", async () => {
   const redis = createRedis({
     url: "redis://localhost:6379/0",

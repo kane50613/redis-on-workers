@@ -1,3 +1,5 @@
+import "./polyfill-promise";
+
 import encodeCommand from "@redis/client/dist/lib/client/RESP2/encoder";
 import type { RedisCommandArgument } from "@redis/client/dist/lib/commands";
 import { Buffer } from "node:buffer";
