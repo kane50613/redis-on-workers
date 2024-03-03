@@ -1,0 +1,39 @@
+{
+  "name": "redis-on-worker",
+  "version": "0.1.0",
+  "description": "Connect to your Redis server using cloudflare:sockets",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsup",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.mjs",
+      "require": "./dist/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "keywords": ["redis", "cloudflare", "workers", "typescript", "socket", "tcp"],
+  "author": {
+    "name": "Kane",
+    "email": "kane@yeecord.com"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20240222.0",
+    "@types/node": "^20.11.24",
+    "@types/redis-errors": "^1.2.3",
+    "@types/redis-parser": "^3.0.3",
+    "prettier": "^3.2.5",
+    "prettier-plugin-organize-imports": "^3.2.4",
+    "redis-errors": "^1.2.0",
+    "tsup": "^8.0.2",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {
+    "@redis/client": "^1.5.14",
+    "redis-parser": "^3.0.0"
+  }
+}
