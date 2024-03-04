@@ -1,8 +1,5 @@
-import encodeCommand from "@redis/client/dist/lib/client/RESP2/encoder";
-import type { RedisCommandArgument } from "@redis/client/dist/lib/commands";
-import { Buffer } from "node:buffer";
-import type { RedisError } from "redis-errors";
-import Parser from "redis-parser";
+import { createParser } from "./create-parser";
+import { encodeCommand } from "./encode-command";
 import { getConnectFn } from "./get-connect-fn";
 import { promiseWithResolvers, WithResolvers } from "./promise";
 import type { Command, CreateRedisOptions, Redis, RedisResponse } from "./type";
@@ -14,8 +11,9 @@ export function createRedis(options: CreateRedisOptions) {
   const database = Number(pathname.slice(1)) || 0;
 
   const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
 
-  async function raw(cmd: string, ...args: (string | number | Buffer)[]) {
+  async function raw(cmd: string, ...args: (string | number | Uint8Array)[]) {
     const connect = await getConnectFn(options.connectFn);
 
     options.logger?.("Connecting to", hostname, portNumber.toString());
@@ -35,7 +33,7 @@ export function createRedis(options: CreateRedisOptions) {
     const writer = socket.writable.getWriter();
     const reader = socket.readable.getReader();
 
-    async function closeSocket(err?: RedisError) {
+    async function closeSocket(err?: Error) {
       if (err) options.logger?.(`Closing socket due to error: ${err.message}`);
 
       await socket.close();
@@ -45,21 +43,17 @@ export function createRedis(options: CreateRedisOptions) {
 
     const promiseQueue: WithResolvers<RedisResponse>[] = [];
 
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-assignment
-    const parser = new Parser({
-      returnBuffers: true,
-      stringNumbers: false,
-      returnReply(reply: RedisResponse) {
+    const parser = createParser({
+      onReply(reply) {
         if (options.logger)
           options.logger(
             "Received reply",
-            reply instanceof Buffer ? reply.toString("utf-8") : String(reply),
+            reply instanceof Uint8Array ? decoder.decode(reply) : String(reply),
           );
 
         promiseQueue.shift()?.resolve(reply);
       },
-      returnError: closeSocket,
-      returnFatalError: closeSocket,
+      onError: closeSocket,
     });
 
     async function startListener() {
@@ -76,7 +70,7 @@ export function createRedis(options: CreateRedisOptions) {
           value: Uint8Array;
         };
 
-        parser.execute(Buffer.from(value));
+        parser(value);
 
         if (done) break;
       }
@@ -98,7 +92,7 @@ export function createRedis(options: CreateRedisOptions) {
       });
 
     async function internalSend(commands: Command[]) {
-      const chunks: RedisCommandArgument[] = [];
+      const chunks: Array<string | Uint8Array> = [];
 
       for (const command of commands) {
         const { promise, resolve, reject } =
@@ -111,7 +105,7 @@ export function createRedis(options: CreateRedisOptions) {
         });
 
         const payload = encodeCommand(
-          command.map((arg) => (arg instanceof Buffer ? arg : String(arg))),
+          command.map((arg) => (arg instanceof Uint8Array ? arg : String(arg))),
         );
 
         chunks.push(...payload);
@@ -150,10 +144,10 @@ export function createRedis(options: CreateRedisOptions) {
     }
   }
 
-  async function redis(cmd: string, ...args: (string | number | Buffer)[]) {
+  async function redis(cmd: string, ...args: (string | number | Uint8Array)[]) {
     const result = await raw(cmd, ...args);
 
-    if (result instanceof Buffer) return result.toString("utf-8");
+    if (result instanceof Uint8Array) return decoder.decode(result);
 
     return result;
   }
