@@ -1,11 +1,10 @@
-import "./polyfill-promise";
-
 import encodeCommand from "@redis/client/dist/lib/client/RESP2/encoder";
 import type { RedisCommandArgument } from "@redis/client/dist/lib/commands";
 import { Buffer } from "node:buffer";
 import type { RedisError } from "redis-errors";
 import Parser from "redis-parser";
 import { getConnectFn } from "./get-connect-fn";
+import { promiseWithResolvers, WithResolvers } from "./promise";
 import type { Command, CreateRedisOptions, Redis, RedisResponse } from "./type";
 
 export function createRedis(options: CreateRedisOptions) {
@@ -93,7 +92,7 @@ export function createRedis(options: CreateRedisOptions) {
 
       for (const command of commands) {
         const { promise, resolve, reject } =
-          Promise.withResolvers<RedisResponse>();
+          promiseWithResolvers<RedisResponse>();
 
         promiseQueue.push({
           promise,
