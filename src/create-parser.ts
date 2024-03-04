@@ -1,6 +1,6 @@
 import { CreateParserOptions } from "./type";
 
-let bufferPool = new Uint8Array(32 * 1024);
+let bufferPool: Uint8Array | undefined;
 let bufferOffset = 0;
 let interval: NodeJS.Timeout | undefined;
 let counter = 0;
@@ -214,7 +214,7 @@ function parseArrayChunks(parser: ParserContext) {
 }
 
 function decreaseBufferPool() {
-  if (bufferPool.length > 50 * 1024) {
+  if (bufferPool && bufferPool.length > 50 * 1024) {
     if (counter === 1 || notDecreased > counter * 2) {
       const minSliceLen = Math.floor(bufferPool.length / 10);
       const sliceLength =
@@ -235,18 +235,22 @@ function decreaseBufferPool() {
 }
 
 function resizeBuffer(length: number) {
-  if (bufferPool.length < length + bufferOffset) {
-    const multiplier = length > 1024 * 1024 * 75 ? 2 : 3;
-    if (bufferOffset > 1024 * 1024 * 111) {
-      bufferOffset = 1024 * 1024 * 50;
-    }
+  if (bufferPool && bufferPool.length >= length + bufferOffset) {
+    return;
+  }
 
-    bufferPool = new Uint8Array(length * multiplier + bufferOffset);
-    bufferOffset = 0;
-    counter++;
-    if (interval === null) {
-      interval = setInterval(decreaseBufferPool, 50);
-    }
+  const multiplier = length > 1024 * 1024 * 75 ? 2 : 3;
+
+  if (bufferOffset > 1024 * 1024 * 111) {
+    bufferOffset = 1024 * 1024 * 50;
+  }
+
+  bufferPool = new Uint8Array(length * multiplier + bufferOffset);
+  bufferOffset = 0;
+  counter++;
+
+  if (interval === null) {
+    interval = setInterval(decreaseBufferPool, 50);
   }
 }
 
@@ -271,6 +275,8 @@ function concatBulkBuffer(parser: ParserContext) {
 
   resizeBuffer(length);
   const start = bufferOffset;
+
+  if (!bufferPool) throw new Error("Buffer pool is null");
 
   bufferPool.set(list[0].subarray(oldOffset), start);
 
