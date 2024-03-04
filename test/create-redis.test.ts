@@ -10,7 +10,9 @@ test("create-redis", async () => {
 
   expect(redis).toBeDefined();
 
-  const PONG = Buffer.from("PONG");
+  const encoder = new TextEncoder();
+
+  const PONG = encoder.encode("PONG");
 
   expect(await redis.raw("PING")).toEqual(PONG);
 
