@@ -4,8 +4,6 @@ Connect to your Redis server using `cloudflare:sockets`.
 
 This package is designed to work with Cloudflare Workers, but it can also be used in node.js thanks to the implementation of [`cloudflare:sockets` for node.js](https://github.com/Ethan-Arrowood/socket).
 
-For next.js users, please see the [Node.js, Next.js local development](#nodejs-nextjs-local-development) section.
-
 ## Installation
 
 ```sh
@@ -52,29 +50,12 @@ const decoder = new TextDecoder();
 console.log(decoder.decode(value)); // bar
 ```
 
-### Node.js, Next.js local development
+### Node.js
 
 Please install the node.js polyfill for `cloudflare:sockets` to use this package in node.js.
 
 ```sh
 npm install @arrowood.dev/socket
-```
-
-#### Extra webpack configuration for Next.js
-
-Since `cloudflare:sockets` is a runtime dependency, you need to add it to the `externals` in your `next.config.js`.
-
-```js
-const config = {
-  // your next.js config
-  webpack: (config, { webpack }) => {
-    config.externals.push({
-      "cloudflare:sockets": "import('cloudflare:sockets').catch(console.error)",
-    });
-
-    return config;
-  },
-};
 ```
 
 ## API
