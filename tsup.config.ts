@@ -8,5 +8,4 @@ export default defineConfig({
   clean: true,
   target: "esnext",
   format: ["cjs", "esm"],
-  minify: true,
 });
