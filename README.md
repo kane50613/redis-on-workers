@@ -32,7 +32,7 @@ const value = await redis("GET", "foo");
 console.log(value); // bar
 ```
 
-### Raw buffer
+### Raw Uint8Array
 
 This is useful if you want to store binary data. For example, you can store protobuf messages in Redis.
 
@@ -47,7 +47,9 @@ await redis.raw("SET", "foo", "bar");
 
 const value = await redis.raw("GET", "foo");
 
-console.log(value); // <Buffer 62 61 72>
+const decoder = new TextDecoder();
+
+console.log(decoder.decode(value)); // bar
 ```
 
 ### Node.js, Next.js local development
