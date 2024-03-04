@@ -18,6 +18,8 @@ export function createRedis(options: CreateRedisOptions) {
   async function raw(cmd: string, ...args: (string | number | Buffer)[]) {
     const connect = await getConnectFn(options.connectFn);
 
+    options.logger?.("Connecting to", hostname, portNumber.toString());
+
     const socket = connect(
       {
         hostname,
@@ -81,7 +83,15 @@ export function createRedis(options: CreateRedisOptions) {
     }
 
     startListener()
-      .catch(console.error)
+      .catch((e) => {
+        options.logger?.(
+          "Error sending command",
+          e.message,
+          e.stack ?? "No stack",
+        );
+
+        throw e;
+      })
       .finally(async () => {
         options.logger?.("Listener closed");
         await closeSocket();
@@ -125,6 +135,15 @@ export function createRedis(options: CreateRedisOptions) {
 
     try {
       return await internalSend(commands).then((reply) => reply.at(-1) ?? null);
+    } catch (e) {
+      if (!(e instanceof Error)) throw e;
+
+      options.logger?.(
+        "Error sending command",
+        e.message,
+        e.stack ?? "No stack",
+      );
+      throw e;
     } finally {
       options.logger?.("Closing socket");
       await closeSocket();
