@@ -1,8 +1,7 @@
 interface WithResolvers<T> {
   promise: Promise<T>;
   resolve: (value: T) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  reject: (reason: any) => void;
+  reject: (reason: unknown) => void;
 }
 
 declare interface PromiseConstructor {
