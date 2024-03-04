@@ -1,9 +1,9 @@
 {
   "name": "redis-on-workers",
-  "version": "0.1.2",
+  "version": "0.2.0",
   "description": "Connect to your Redis server using cloudflare:sockets",
   "scripts": {
-    "build": "tsup",
+    "build": "swc src -d dist/esm --strip-leading-paths && swc src -d dist/cjs -C module.type=commonjs --strip-leading-paths && tsc --declaration --emitDeclarationOnly --declarationDir dist/types",
     "test": "vitest"
   },
   "main": "dist/index.mjs",
@@ -13,11 +13,17 @@
     "README.md",
     "LICENSE"
   ],
+  "typings": "dist/types/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js"
+      "types": "./dist/types/index.d.ts",
+      "import": "./dist/esm/index.js",
+      "require": "./dist/cjs/index.js"
+    },
+    "./": {
+      "types": "./dist/types/",
+      "import": "./dist/esm/",
+      "require": "./dist/cjs/"
     },
     "./package.json": "./package.json"
   },
@@ -33,19 +39,23 @@
     "name": "Kane",
     "email": "kane@yeecord.com"
   },
+  "type": "module",
   "license": "MIT",
   "devDependencies": {
-    "@arrowood.dev/socket": "^0.2.0",
     "@cloudflare/workers-types": "^4.20240222.0",
+    "@swc/cli": "^0.3.10",
+    "@swc/core": "^1.4.2",
     "@types/node": "^20.11.24",
     "@types/redis-errors": "^1.2.3",
     "@types/redis-parser": "^3.0.3",
     "prettier": "^3.2.5",
     "prettier-plugin-organize-imports": "^3.2.4",
     "redis-errors": "^1.2.0",
-    "tsup": "^8.0.2",
     "typescript": "^5.3.3",
     "vitest": "^1.3.1"
+  },
+  "optionalDependencies": {
+    "@arrowood.dev/socket": "^0.2.0"
   },
   "dependencies": {
     "@redis/client": "^1.5.14",

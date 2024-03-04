@@ -4,7 +4,7 @@ Connect to your Redis server using `cloudflare:sockets`.
 
 This package is designed to work with Cloudflare Workers, but it can also be used in node.js thanks to the implementation of [`cloudflare:sockets` for node.js](https://github.com/Ethan-Arrowood/socket).
 
-For next.js users, please see the [Next.js](#nextjs) section for extra configuration.
+For next.js users, please see the [Node.js, Next.js local development](#nodejs-nextjs-local-development) section.
 
 ## Installation
 
@@ -50,34 +50,12 @@ const value = await redis.raw("GET", "foo");
 console.log(value); // <Buffer 62 61 72>
 ```
 
-### Node.js
+### Node.js, Next.js local development
 
-We import the node.js polyfill for `cloudflare:sockets` to make it work in node.js.
+Please install the node.js polyfill for `cloudflare:sockets` to use this package in node.js.
 
-```ts
-import { createRedis } from "redis-on-workers";
-import { connect } from "@arrowood.dev/socket";
-
-const redis = createRedis({
-  url: "redis://<username>:<password>@<host>:<port>",
-  connectFn: connect,
-});
-```
-
-### Next.js
-
-We import the node.js polyfill for `cloudflare:sockets` only in development mode.
-
-```ts
-import { createRedis } from "redis-on-workers";
-
-const redis = createRedis({
-  url: "redis://<username>:<password>@<host>:<port>",
-  connectFn:
-    process.env.NODE_ENV === "development"
-      ? import("@arrowood.dev/socket").then((m) => m.connect)
-      : undefined,
-});
+```sh
+npm install @arrowood.dev/socket
 ```
 
 #### Extra webpack configuration for Next.js

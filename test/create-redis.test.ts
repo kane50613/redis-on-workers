@@ -1,8 +1,8 @@
 import { connect } from "@arrowood.dev/socket";
 import { expect, test } from "vitest";
-import { createRedis } from "./create-redis";
+import { createRedis } from "../src";
 
-test("Redis", async () => {
+test("create-redis", async () => {
   const redis = createRedis({
     url: "redis://localhost:6379/0",
     connectFn: connect,

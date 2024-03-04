@@ -5,6 +5,7 @@ import type { RedisCommandArgument } from "@redis/client/dist/lib/commands";
 import { Buffer } from "node:buffer";
 import type { RedisError } from "redis-errors";
 import Parser from "redis-parser";
+import { getConnectFn } from "./get-connect-fn";
 import type { Command, CreateRedisOptions, Redis, RedisResponse } from "./type";
 
 export function createRedis(options: CreateRedisOptions) {
@@ -16,11 +17,9 @@ export function createRedis(options: CreateRedisOptions) {
   const encoder = new TextEncoder();
 
   async function raw(cmd: string, ...args: (string | number | Buffer)[]) {
-    options.connectFn ??= await import("cloudflare:sockets").then(
-      (r) => r.connect,
-    );
+    const connect = await getConnectFn(options.connectFn);
 
-    const socket = options.connectFn(
+    const socket = connect(
       {
         hostname,
         port: portNumber,
