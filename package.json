@@ -1,6 +1,6 @@
 {
   "name": "redis-on-workers",
-  "version": "0.2.9q",
+  "version": "0.2.9",
   "description": "Connect to your Redis server using cloudflare:sockets",
   "scripts": {
     "build": "tsup",
