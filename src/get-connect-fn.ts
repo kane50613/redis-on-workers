@@ -5,7 +5,7 @@ export async function getConnectFn(fn?: CreateRedisOptions["connectFn"]) {
 
   try {
     const { connect } = await import(
-      /*! webpackIgnore: true */
+      /* webpackIgnore: true */
       "cloudflare:sockets"
     );
 
