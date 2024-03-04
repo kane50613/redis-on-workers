@@ -4,8 +4,16 @@ export async function getConnectFn(fn?: CreateRedisOptions["connectFn"]) {
   if (fn) return fn;
 
   try {
-    return await import("cloudflare:sockets").then((r) => r.connect);
+    const { connect } = await import("cloudflare:sockets");
+
+    return connect;
   } catch (e) {
-    return await import("@arrowood.dev/socket").then((r) => r.connect);
+    try {
+      const { connect } = await import("@arrowood.dev/socket");
+
+      return connect;
+    } catch (e) {
+      throw new Error("No socket provider found");
+    }
   }
 }
