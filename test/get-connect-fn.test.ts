@@ -1,9 +1,10 @@
 import { Socket } from "@arrowood.dev/socket";
-import { expect, test } from "vitest";
+import { doesNotReject, equal } from "node:assert";
+import { test } from "node:test";
 import { getConnectFn } from "../src";
 
 test("get-connect-fn", async () => {
-  expect(await getConnectFn()).toBeDefined();
+  await doesNotReject(getConnectFn);
 
   const fn = () => {
     return new Socket({
@@ -12,5 +13,5 @@ test("get-connect-fn", async () => {
     });
   };
 
-  expect(await getConnectFn(fn)).toBe(fn);
+  equal(await getConnectFn(fn), fn);
 });

@@ -1,5 +1,6 @@
 import { connect } from "@arrowood.dev/socket";
-import { expect, test } from "vitest";
+import { deepEqual, equal } from "node:assert";
+import { test } from "node:test";
 import { createRedis } from "../src";
 
 test("create-redis", async () => {
@@ -8,19 +9,17 @@ test("create-redis", async () => {
     connectFn: connect,
   });
 
-  expect(redis).toBeDefined();
-
   const encoder = new TextEncoder();
 
   const PONG = encoder.encode("PONG");
 
-  expect(await redis.raw("PING")).toEqual(PONG);
+  deepEqual(await redis.raw("PING"), PONG);
 
-  expect(await redis("SET", "foo", "bar")).toBe("OK");
+  equal(await redis("SET", "foo", "bar"), "OK");
 
-  expect(await redis("GET", "foo")).toBe("bar");
+  equal(await redis("GET", "foo"), "bar");
 
-  expect(await redis("DEL", "foo")).toBe(1);
+  equal(await redis("DEL", "foo"), 1);
 
-  expect(await redis("GET", "foo")).toBe(null);
+  equal(await redis("GET", "foo"), null);
 });
