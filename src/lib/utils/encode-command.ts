@@ -5,9 +5,7 @@ export function encodeCommand(args: Array<string | Uint8Array>) {
 
   let strings = "*" + args.length + CRLF;
 
-  for (let i = 0; i < args.length; i++) {
-    const arg = args[i];
-
+  for (const arg of args) {
     const encoder = new TextEncoder();
 
     if (typeof arg === "string") {

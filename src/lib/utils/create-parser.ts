@@ -1,4 +1,9 @@
-import { CreateParserOptions } from "./type";
+// source: https://github.com/NodeRedis/node-redis-parser/blob/4c2d31c8717f05dea1ffd91a0e45d68f452c73bd/lib/parser.js#L315
+// 1. replace node-only module "buffer" to "Uint8Array"
+// 2. remove "string_decoder" module, just return Uint8Array
+// 3. replace "redis-errors" with "Error"
+
+import { CreateParserOptions } from "../../type";
 
 let bufferPool: Uint8Array | undefined;
 let bufferOffset = 0;

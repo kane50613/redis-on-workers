@@ -1,6 +1,6 @@
 import { deepEqual } from "node:assert";
 import { test } from "node:test";
-import { encodeCommand } from "../src/encode-command";
+import { encodeCommand } from "../src/lib/utils/encode-command";
 
 test("encode-command", async () => {
   deepEqual(encodeCommand(["SET", "key", "value"]), [

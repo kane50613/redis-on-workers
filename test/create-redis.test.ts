@@ -1,25 +1,27 @@
-import { connect } from "@arrowood.dev/socket";
 import { deepEqual, equal } from "node:assert";
 import { test } from "node:test";
 import { createRedis } from "../src";
 
 test("create-redis", async () => {
-  const redis = createRedis({
-    url: "redis://localhost:6379/0",
-    connectFn: connect,
-  });
+  const redis = createRedis("redis://localhost:6379/0");
 
   const encoder = new TextEncoder();
 
   const PONG = encoder.encode("PONG");
 
-  deepEqual(await redis.raw("PING"), PONG);
+  deepEqual(await redis.sendRaw("PING"), PONG);
 
-  equal(await redis("SET", "foo", "bar"), "OK");
+  equal(await redis.send("SET", "foo", "bar"), "OK");
 
-  equal(await redis("GET", "foo"), "bar");
+  equal(await redis.send("GET", "foo"), "bar");
 
-  equal(await redis("DEL", "foo"), 1);
+  equal(await redis.send("DEL", "foo"), 1);
 
-  equal(await redis("GET", "foo"), null);
+  equal(redis.connected, true);
+
+  equal(await redis.sendOnce("GET", "foo"), null);
+
+  equal(redis.connected, false);
+
+  equal(await redis.sendOnce("PING"), "PONG");
 });

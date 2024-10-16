@@ -19,15 +19,16 @@ This is the minimal example to connect to a Redis server.
 ```ts
 import { createRedis } from "redis-on-workers";
 
-const redis = createRedis({
-  url: "redis://<username>:<password>@<host>:<port>",
-});
+const redis = createRedis("redis://<username>:<password>@<host>:<port>");
 
-await redis("SET", "foo", "bar");
+await redis.send("SET", "foo", "bar");
 
-const value = await redis("GET", "foo");
+const value = await redis.send("GET", "foo");
 
 console.log(value); // bar
+
+// remember to close the connection after use, or use `redis.sendOnce`.
+await redis.close();
 ```
 
 ### Raw Uint8Array
@@ -37,13 +38,11 @@ This is useful if you want to store binary data. For example, you can store prot
 ```ts
 import { createRedis } from "redis-on-workers";
 
-const redis = createRedis({
-  url: "redis://<username>:<password>@<host>:<port>",
-});
+const redis = createRedis( "redis://<username>:<password>@<host>:<port>");
 
-await redis.raw("SET", "foo", "bar");
+await redis.sendRaw("SET", "foo", "bar");
 
-const value = await redis.raw("GET", "foo");
+const value = await redis.sendRawOnce("GET", "foo");
 
 const decoder = new TextDecoder();
 
@@ -60,9 +59,11 @@ npm install @arrowood.dev/socket
 
 ## API
 
-### `createRedis(options: RedisOptions): Redis`
+### `createRedis(options: CreateRedisOptions | string): RedisInstance`
 
 Create a new Redis client, does NOT connect to the server yet, the connection will be established when the first command is sent.
+
+Or you can start connection immediately by using `redis.startConnection()`.
 
 ### `RedisOptions`
 
