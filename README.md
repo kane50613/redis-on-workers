@@ -38,7 +38,7 @@ This is useful if you want to store binary data. For example, you can store prot
 ```ts
 import { createRedis } from "redis-on-workers";
 
-const redis = createRedis( "redis://<username>:<password>@<host>:<port>");
+const redis = createRedis("redis://<username>:<password>@<host>:<port>");
 
 await redis.sendRaw("SET", "foo", "bar");
 
@@ -65,7 +65,7 @@ Create a new Redis client, does NOT connect to the server yet, the connection wi
 
 Or you can start connection immediately by using `redis.startConnection()`.
 
-### `RedisOptions`
+### `CreateRedisOptions`
 
 - `url` (string): The URL of the Redis server.
 - `tls` (boolean): Whether to use TLS. Default: `false`.
