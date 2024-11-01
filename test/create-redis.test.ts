@@ -85,3 +85,13 @@ test("full-text-search", async () => {
 
   await redis.close();
 });
+
+test("error-handling", async () => {
+  const redis = createRedis("redis://localhost:6379/0");
+
+  assert.rejects(redis.sendOnce("MY_GO"), {
+    message: "ERR unknown command 'MY_GO', with args beginning with: ",
+  });
+
+  await redis.close();
+});
