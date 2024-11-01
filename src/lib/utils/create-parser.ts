@@ -91,7 +91,7 @@ function parseSimpleString(parser: ParserContext) {
       // \r\n
       parser.offset = offset + 1;
 
-      return parser.buffer?.slice(start, offset - 1);
+      return buffer.slice(start, offset - 1);
     }
   }
 }
@@ -134,11 +134,9 @@ function parseSimpleNumbers(parser: ParserContext) {
 }
 
 function parseError(parser: ParserContext) {
-  let string = parseSimpleString(parser);
-
-  if (string !== undefined) {
-    return new Error(string.toString());
-  }
+  return new Error(
+    new TextDecoder().decode(parseSimpleString(parser)) || "Unknown error",
+  );
 }
 
 function handleError(parser: ParserContext, type: number) {

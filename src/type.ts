@@ -5,6 +5,8 @@ export type Command = [string, ...(string | number | Uint8Array)[]];
 
 export type RedisResponse = Uint8Array | number | null | RedisResponse[];
 
+export type StringifyRedisResponse = string | number | null | StringifyRedisResponse[];
+
 interface BaseRedisOptions {
   tls?: boolean;
   logger?: (...message: string[]) => void;

@@ -8,6 +8,7 @@ import { createParser } from "./utils/create-parser";
 import { encodeCommand } from "./utils/encode-command";
 import { getConnectFn } from "./utils/get-connect-fn";
 import { promiseWithResolvers, WithResolvers } from "./utils/promise";
+import { stringifyResult } from "./utils/stringify-result";
 
 export class RedisInstance {
   private encoder = new TextEncoder();
@@ -35,7 +36,12 @@ export class RedisInstance {
 
       this.promiseQueue.shift()?.resolve(reply);
     },
-    onError: this.close,
+    onError: (err) => {
+      if (this.logger)
+        this.logger("Error", err.message, err.stack ?? "No stack");
+
+      this.promiseQueue.shift()?.reject(err);
+    },
   });
 
   constructor(options: CreateRedisOptions) {
@@ -182,11 +188,7 @@ export class RedisInstance {
   }
 
   public async send(...args: Command) {
-    const result = await this.sendRaw(...args);
-
-    if (result instanceof Uint8Array) return this.decoder.decode(result);
-
-    return result;
+    return stringifyResult(await this.sendRaw(...args));
   }
 
   public async sendRaw(...args: Command) {
