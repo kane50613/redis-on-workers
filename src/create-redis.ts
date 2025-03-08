@@ -10,3 +10,5 @@ export function createRedis(options: CreateRedisOptions | string) {
       : options,
   );
 }
+
+export { RedisInstance }
