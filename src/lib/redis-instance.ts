@@ -220,11 +220,11 @@ export class RedisInstance {
 
     if (!this.isInitialized) {
       commands.push(...this.getInitializeCommands());
+      this.isInitialized = true;
     }
 
     commands.push(command);
     const result = await this.writeCommandsToConnection(commands);
-    this.isInitialized = true;
 
     return result.at(-1) ?? null;
   }
