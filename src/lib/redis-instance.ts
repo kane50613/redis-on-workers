@@ -230,6 +230,8 @@ export class RedisInstance {
   }
 
   private async writeCommandsToConnection(commands: Command[]) {
+    const connection = await this.connection();
+
     const chunks: Array<string | Uint8Array> = [];
 
     for (const command of commands) {
@@ -248,8 +250,6 @@ export class RedisInstance {
 
       chunks.push(...payload);
     }
-
-    const connection = await this.connection();
 
     for (const chunk of chunks) {
       await connection.writer.write(
