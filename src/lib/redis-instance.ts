@@ -299,6 +299,7 @@ export class RedisInstance {
     for (const promise of this.promiseQueue) {
       promise.reject(err ?? new Error("Connection closed"));
     }
+    this.promiseQueue = [];
 
     await connection.socket.close();
     await connection.writer.abort(err);
