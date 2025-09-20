@@ -5,12 +5,6 @@
 
 import type { CreateParserOptions, RedisResponse } from "../../type";
 
-let bufferPool: Uint8Array | undefined;
-let bufferOffset = 0;
-let interval: NodeJS.Timeout | undefined;
-let counter = 0;
-let notDecreased = 0;
-
 function createParserContext(options: CreateParserOptions) {
   return {
     options,
@@ -21,6 +15,11 @@ function createParserContext(options: CreateParserOptions) {
     bufferCache: [] as Uint8Array[],
     arrayCache: [] as RedisResponse[],
     arrayPos: [] as number[],
+    bufferPool: undefined as Uint8Array | undefined,
+    bufferOffset: 0,
+    interval: undefined as NodeJS.Timeout | undefined,
+    counter: 0,
+    notDecreased: 0,
   };
 }
 
@@ -223,44 +222,54 @@ function parseArrayChunks(parser: ParserContext) {
   return parseArrayElements(parser, tmp, pos);
 }
 
-function decreaseBufferPool() {
-  if (bufferPool && bufferPool.length > 50 * 1024) {
-    if (counter === 1 || notDecreased > counter * 2) {
-      const minSliceLen = Math.floor(bufferPool.length / 10);
+function decreaseBufferPool(context: ParserContext) {
+  if (context.bufferPool && context.bufferPool.length > 50 * 1024) {
+    if (context.counter === 1 || context.notDecreased > context.counter * 2) {
+      const minSliceLen = Math.floor(context.bufferPool.length / 10);
       const sliceLength =
-        minSliceLen < bufferOffset ? bufferOffset : minSliceLen;
-      bufferOffset = 0;
-      bufferPool = bufferPool.subarray(sliceLength, bufferPool.length);
+        minSliceLen < context.bufferOffset ? context.bufferOffset : minSliceLen;
+      context.bufferOffset = 0;
+      context.bufferPool = context.bufferPool.subarray(
+        sliceLength,
+        context.bufferPool.length,
+      );
     } else {
-      notDecreased++;
-      counter--;
+      context.notDecreased++;
+      context.counter--;
     }
   } else {
-    clearInterval(interval);
+    if (context.interval) {
+      clearInterval(context.interval);
+    }
 
-    counter = 0;
-    notDecreased = 0;
-    interval = undefined;
+    context.counter = 0;
+    context.notDecreased = 0;
+    context.interval = undefined;
   }
 }
 
-function resizeBuffer(length: number) {
-  if (bufferPool && bufferPool.length >= length + bufferOffset) {
+function resizeBuffer(context: ParserContext, length: number) {
+  if (
+    context.bufferPool &&
+    context.bufferPool.length >= length + context.bufferOffset
+  ) {
     return;
   }
 
   const multiplier = length > 1024 * 1024 * 75 ? 2 : 3;
 
-  if (bufferOffset > 1024 * 1024 * 111) {
-    bufferOffset = 1024 * 1024 * 50;
+  if (context.bufferOffset > 1024 * 1024 * 111) {
+    context.bufferOffset = 1024 * 1024 * 50;
   }
 
-  bufferPool = new Uint8Array(length * multiplier + bufferOffset);
-  bufferOffset = 0;
-  counter++;
+  context.bufferPool = new Uint8Array(
+    length * multiplier + context.bufferOffset,
+  );
+  context.bufferOffset = 0;
+  context.counter++;
 
-  if (interval === null) {
-    interval = setInterval(decreaseBufferPool, 50);
+  if (context.interval === undefined) {
+    context.interval = setInterval(() => decreaseBufferPool(context), 50);
   }
 }
 
@@ -283,25 +292,28 @@ function concatBulkBuffer(parser: ParserContext) {
     offset = list[list.length - 2].length + offset;
   }
 
-  resizeBuffer(length);
-  const start = bufferOffset;
+  resizeBuffer(parser, length);
+  const start = parser.bufferOffset;
 
-  if (!bufferPool) throw new Error("Buffer pool is null");
+  if (!parser.bufferPool) throw new Error("Buffer pool is null");
 
-  bufferPool.set(list[0].subarray(oldOffset), start);
+  parser.bufferPool.set(list[0].subarray(oldOffset), start);
 
-  bufferOffset += list[0].length - oldOffset;
+  parser.bufferOffset += list[0].length - oldOffset;
 
   for (const chunk of list.slice(1, chunks - 1)) {
-    bufferPool.set(chunk, bufferOffset);
+    parser.bufferPool.set(chunk, parser.bufferOffset);
 
-    bufferOffset += chunk.length;
+    parser.bufferOffset += chunk.length;
   }
 
-  bufferPool.set(list[chunks - 1].subarray(0, offset - 2), bufferOffset);
-  bufferOffset += offset - 2;
+  parser.bufferPool.set(
+    list[chunks - 1].subarray(0, offset - 2),
+    parser.bufferOffset,
+  );
+  parser.bufferOffset += offset - 2;
 
-  return bufferPool.subarray(start, bufferOffset);
+  return parser.bufferPool.subarray(start, parser.bufferOffset);
 }
 
 function handleInitialBuffer(context: ParserContext, buffer: Uint8Array) {
