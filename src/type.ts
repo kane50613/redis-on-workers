@@ -1,5 +1,5 @@
 import type { connect } from "cloudflare:sockets";
-import type { connect as nodeConnect, Socket } from "@arrowood.dev/socket";
+import type { connect as nodeConnect } from "@arrowood.dev/socket";
 
 export type Command = [string, ...(string | number | Uint8Array)[]];
 
@@ -42,18 +42,8 @@ export interface CreateParserOptions {
   onError: (err: Error) => void;
 }
 
-export type Redis = ((
-  cmd: string,
-  ...args: (string | number | Buffer)[]
-) => Promise<string | null>) & {
-  raw: (
-    cmd: string,
-    ...args: (string | number | Buffer)[]
-  ) => Promise<Buffer | null>;
-};
-
 export interface ConnectionInstance {
   writer: WritableStreamDefaultWriter<Uint8Array>;
   reader: ReadableStreamDefaultReader<Uint8Array>;
-  socket: Socket | ReturnType<typeof connect>;
+  socket: ReturnType<typeof connect | typeof nodeConnect>;
 }
