@@ -6,7 +6,9 @@
     "build": "tsup",
     "lint": "biome ci .",
     "lint:fix": "biome check --write --unsafe .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "release": "changeset publish",
+    "version": "changeset version"
   },
   "main": "dist/index.mjs",
   "files": [
