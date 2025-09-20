@@ -7,17 +7,18 @@ import type {
 import { createParser } from "./utils/create-parser";
 import { encodeCommand } from "./utils/encode-command";
 import { getConnectFn } from "./utils/get-connect-fn";
-import { type WithResolvers, promiseWithResolvers } from "./utils/promise";
 import { stringifyResult } from "./utils/stringify-result";
 
 export class RedisInstance {
   private encoder = new TextEncoder();
   private decoder = new TextDecoder();
 
-  private promiseQueue: WithResolvers<RedisResponse>[] = [];
+  private promiseQueue: ReturnType<
+    typeof Promise.withResolvers<RedisResponse>
+  >[] = [];
 
   public options: CreateRedisOptions;
-  private connectionInstance?: ConnectionInstance | Promise<ConnectionInstance>;
+  private connectionInstance?: Promise<ConnectionInstance>;
   public config;
 
   private isInitialized = false;
@@ -26,13 +27,12 @@ export class RedisInstance {
     onReply: (reply) => {
       const logger = this.logger;
 
-      if (logger)
-        logger?.(
-          "Received reply",
-          reply instanceof Uint8Array
-            ? this.decoder.decode(reply)
-            : String(reply),
-        );
+      logger?.(
+        "Received reply",
+        reply instanceof Uint8Array
+          ? this.decoder.decode(reply)
+          : String(reply),
+      );
 
       this.promiseQueue.shift()?.resolve(reply);
     },
@@ -49,10 +49,6 @@ export class RedisInstance {
     this.config = this.getConnectConfig();
   }
 
-  get connected() {
-    return !!this.connectionInstance;
-  }
-
   get logger() {
     return this.options.logger;
   }
@@ -61,15 +57,48 @@ export class RedisInstance {
     return this.options.connectFn;
   }
 
+  async isConnected() {
+    const connectionInstance = await this.connectionInstance;
+
+    return !!connectionInstance;
+  }
+
   get tls() {
     return this.options.tls;
   }
 
   async connection() {
-    if (!this.connectionInstance)
-      throw new Error(
-        "Redis connection not started, call `startConnection` first",
-      );
+    if (!this.connectionInstance) {
+      this.connectionInstance = this.createConnection().catch((error) => {
+        this.connectionInstance = undefined;
+        throw error;
+      });
+
+      void (async () => {
+        try {
+          const connection = await this.connectionInstance;
+
+          if (!connection) {
+            throw new Error("Connection not established");
+          }
+
+          await this.startMessageListener(connection);
+        } catch (e) {
+          if (e instanceof Error) {
+            this.logger?.(
+              "Error sending command",
+              e.message,
+              e.stack ?? "No stack",
+            );
+          }
+
+          throw e;
+        } finally {
+          this.logger?.("Listener closed");
+          await this.close();
+        }
+      })();
+    }
 
     return await this.connectionInstance;
   }
@@ -108,38 +137,7 @@ export class RedisInstance {
     };
   }
 
-  public async startConnection() {
-    if (this.connectionInstance) return this.connectionInstance;
-
-    this.connectionInstance = this.createConnection()
-      .catch((error) => {
-        this.connectionInstance = undefined;
-        throw error;
-      })
-      .then((connection) => {
-        this.connectionInstance = connection;
-        return connection;
-      });
-
-    void this.startMessageListener(await this.connectionInstance)
-      .catch((e) => {
-        this.logger?.(
-          "Error sending command",
-          e.message,
-          e.stack ?? "No stack",
-        );
-
-        throw e;
-      })
-      .finally(async () => {
-        this.logger?.("Listener closed");
-        await this.close();
-      });
-
-    return this.connectionInstance;
-  }
-
-  private async createConnection() {
+  private async createConnection(): Promise<ConnectionInstance> {
     const connect = await getConnectFn(this.connectFn);
 
     this.options.logger?.(
@@ -159,8 +157,10 @@ export class RedisInstance {
       },
     );
 
-    const writer = socket.writable.getWriter();
-    const reader = socket.readable.getReader();
+    const writer =
+      socket.writable.getWriter() as WritableStreamDefaultWriter<Uint8Array>;
+    const reader =
+      socket.readable.getReader() as ReadableStreamDefaultReader<Uint8Array>;
 
     return {
       socket,
@@ -204,7 +204,7 @@ export class RedisInstance {
   }
 
   public async sendRaw(...args: Command) {
-    if (!this.connectionInstance) await this.startConnection();
+    if (!this.connectionInstance) await this.connection();
 
     try {
       return await this.unsafeSend(args);
@@ -236,7 +236,7 @@ export class RedisInstance {
 
     for (const command of commands) {
       const { promise, resolve, reject } =
-        promiseWithResolvers<RedisResponse>();
+        Promise.withResolvers<RedisResponse>();
 
       this.promiseQueue.push({
         promise,
@@ -287,7 +287,9 @@ export class RedisInstance {
       this.logger?.(`Closing socket due to error: ${err.message}`);
     }
 
-    const connection = await this.connectionInstance;
+    const connection = this.connectionInstance
+      ? await this.connectionInstance
+      : undefined;
 
     this.connectionInstance = undefined;
     this.isInitialized = false;
@@ -296,9 +298,12 @@ export class RedisInstance {
       return;
     }
 
-    for (const promise of this.promiseQueue) {
-      promise.reject(err ?? new Error("Connection closed"));
+    if (err) {
+      for (const promise of this.promiseQueue) {
+        promise.reject(err);
+      }
     }
+
     this.promiseQueue = [];
 
     await connection.socket.close();

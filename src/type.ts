@@ -1,11 +1,21 @@
-import type { connect as nodeConnect, Socket } from "@arrowood.dev/socket";
 import type { connect } from "cloudflare:sockets";
+import type { connect as nodeConnect, Socket } from "@arrowood.dev/socket";
 
 export type Command = [string, ...(string | number | Uint8Array)[]];
 
-export type RedisResponse = Uint8Array | number | null | RedisResponse[];
+export type RedisResponse =
+  | Uint8Array
+  | number
+  | null
+  | Error
+  | RedisResponse[];
 
-export type StringifyRedisResponse = string | number | null | StringifyRedisResponse[];
+export type StringifyRedisResponse =
+  | string
+  | number
+  | null
+  | Error
+  | StringifyRedisResponse[];
 
 interface BaseRedisOptions {
   tls?: boolean;

@@ -3,7 +3,7 @@
 // 2. remove "string_decoder" module, just return Uint8Array
 // 3. replace "redis-errors" with "Error"
 
-import { CreateParserOptions } from "../../type";
+import type { CreateParserOptions, RedisResponse } from "../../type";
 
 let bufferPool: Uint8Array | undefined;
 let bufferOffset = 0;
@@ -19,14 +19,18 @@ function createParserContext(options: CreateParserOptions) {
     bigStrSize: 0,
     totalChunkSize: 0,
     bufferCache: [] as Uint8Array[],
-    arrayCache: [] as any[],
+    arrayCache: [] as RedisResponse[],
     arrayPos: [] as number[],
   };
 }
 
 type ParserContext = ReturnType<typeof createParserContext>;
 
-function pushArrayCache(parser: ParserContext, array: any[], pos: number) {
+function pushArrayCache(
+  parser: ParserContext,
+  array: RedisResponse[],
+  pos: number,
+) {
   parser.arrayCache.push(array);
   parser.arrayPos.push(pos);
 }
@@ -36,8 +40,8 @@ function parseLength(parser: ParserContext) {
 
   const length = parser.buffer.length - 1;
 
-  let offset = parser.offset,
-    number = 0;
+  let offset = parser.offset;
+  let number = 0;
 
   while (offset < length) {
     const c1 = parser.buffer[offset++];
@@ -111,9 +115,9 @@ function parseSimpleNumbers(parser: ParserContext) {
   if (!parser.buffer) throw new Error("Buffer is null");
 
   const length = parser.buffer.length - 1;
-  let offset = parser.offset,
-    number = 0,
-    sign = 1;
+  let offset = parser.offset;
+  let number = 0;
+  let sign = 1;
 
   if (parser.buffer[offset] === 45) {
     sign = -1;
@@ -167,8 +171,8 @@ function parseType(parser: ParserContext, type: number) {
 
 function parseArrayElements(
   parser: ParserContext,
-  responses: any[],
-  i: number,
+  responses: RedisResponse[],
+  startIndex: number,
 ) {
   if (!parser.buffer) throw new Error("Buffer is null");
 
@@ -176,36 +180,39 @@ function parseArrayElements(
 
   const bufferLength = parser.buffer.length;
 
-  while (i < responses.length) {
+  let index = startIndex;
+
+  while (index < responses.length) {
     const offset = parser.offset;
 
     if (parser.offset >= bufferLength)
-      return pushArrayCache(parser, responses, i);
+      return pushArrayCache(parser, responses, index);
 
     const response = parseType(parser, parser.buffer[parser.offset++]);
 
     if (response === undefined) {
-      if (!(parser.arrayCache.length || parser.bufferCache.length)) {
+      if (!(parser.arrayCache.length > 0 || parser.bufferCache.length > 0)) {
         parser.offset = offset;
       }
 
-      return pushArrayCache(parser, responses, i);
+      return pushArrayCache(parser, responses, index);
     }
 
-    responses[i] = response;
-    i++;
+    responses[index] = response;
+    index++;
   }
 
   return responses;
 }
 
 function parseArrayChunks(parser: ParserContext) {
-  const tmp = parser.arrayCache.pop();
+  const tmp = parser.arrayCache.pop() as RedisResponse[];
   let pos = parser.arrayPos.pop();
 
-  if (!tmp || pos === undefined) throw new Error("Array cache is empty");
+  if (!Array.isArray(tmp) || pos === undefined)
+    throw new Error("Array cache is empty");
 
-  if (parser.arrayCache.length) {
+  if (parser.arrayCache.length > 0) {
     const res = parseArrayChunks(parser);
 
     if (!res) return pushArrayCache(parser, tmp, pos);
@@ -297,76 +304,124 @@ function concatBulkBuffer(parser: ParserContext) {
   return bufferPool.subarray(start, bufferOffset);
 }
 
+function handleInitialBuffer(context: ParserContext, buffer: Uint8Array) {
+  context.buffer = buffer;
+  context.offset = 0;
+}
+
+function handleBufferConcatenation(
+  context: ParserContext,
+  buffer: Uint8Array,
+  options: CreateParserOptions,
+) {
+  if (!context.buffer) throw new Error("Buffer is null");
+
+  const oldLength = context.buffer.length;
+  const remainingLength = oldLength - context.offset;
+
+  const newBuffer = new Uint8Array(remainingLength + buffer.length);
+
+  newBuffer.set(context.buffer.subarray(context.offset, oldLength));
+  newBuffer.set(buffer, remainingLength);
+
+  context.buffer = newBuffer;
+  context.offset = 0;
+
+  if (context.arrayCache.length > 0) {
+    const arr = parseArrayChunks(context);
+
+    if (arr === undefined) {
+      return false;
+    }
+
+    options.onReply(arr);
+  }
+
+  return true;
+}
+
+function handleLargeStringCompletion(
+  context: ParserContext,
+  buffer: Uint8Array,
+  options: CreateParserOptions,
+) {
+  context.bufferCache.push(buffer);
+
+  let tmp: RedisResponse = concatBulkBuffer(context);
+
+  context.bigStrSize = 0;
+  context.bufferCache = [];
+  context.buffer = buffer;
+
+  if (context.arrayCache.length > 0) {
+    (context.arrayCache[0] as RedisResponse[])[context.arrayPos[0]++] = tmp;
+    const result = parseArrayChunks(context);
+
+    if (!result) return false;
+
+    tmp = result;
+  }
+
+  if (tmp !== undefined) options.onReply(tmp);
+  return true;
+}
+
+function handleBufferCaching(context: ParserContext, buffer: Uint8Array) {
+  context.bufferCache.push(buffer);
+  context.totalChunkSize += buffer.length;
+}
+
+function processParsedResponses(
+  context: ParserContext,
+  options: CreateParserOptions,
+) {
+  if (!context.buffer) throw new Error("Buffer is null");
+
+  while (context.offset < context.buffer.length) {
+    const offset = context.offset;
+    const type = context.buffer[context.offset++];
+    const response = parseType(context, type);
+
+    if (response === undefined) {
+      if (!(context.arrayCache.length > 0 || context.bufferCache.length > 0)) {
+        context.offset = offset;
+      }
+
+      return false;
+    }
+
+    if (response instanceof Error) {
+      options.onError(response);
+    } else {
+      options.onReply(response);
+    }
+  }
+
+  return true;
+}
+
 export function createParser(options: CreateParserOptions) {
   const context = createParserContext(options);
 
   return function execute(buffer: Uint8Array) {
+    let shouldContinue = true;
+
     if (context.buffer === null) {
-      context.buffer = buffer;
-      context.offset = 0;
+      handleInitialBuffer(context, buffer);
     } else if (context.bigStrSize === 0) {
-      const oldLength = context.buffer.length;
-      const remainingLength = oldLength - context.offset;
-
-      const newBuffer = new Uint8Array(remainingLength + context.buffer.length);
-
-      newBuffer.set(context.buffer.subarray(context.offset, oldLength));
-      newBuffer.set(buffer, remainingLength);
-
-      context.offset = 0;
-
-      if (context.arrayCache.length) {
-        const arr = parseArrayChunks(context);
-
-        if (arr === undefined) {
-          return;
-        }
-
-        options.onReply(arr);
-      }
+      shouldContinue = handleBufferConcatenation(context, buffer, options);
     } else if (context.totalChunkSize + buffer.length >= context.bigStrSize) {
-      context.bufferCache.push(buffer);
-
-      let tmp = concatBulkBuffer(context) as Uint8Array | undefined;
-
-      context.bigStrSize = 0;
-      context.bufferCache = [];
-      context.buffer = buffer;
-
-      if (context.arrayCache.length) {
-        context.arrayCache[0][context.arrayPos[0]++] = tmp;
-        tmp = parseArrayChunks(context) as Uint8Array | undefined;
-
-        if (!tmp) return;
-      }
-
-      if (tmp !== undefined) options.onReply(tmp);
+      shouldContinue = handleLargeStringCompletion(context, buffer, options);
     } else {
-      context.bufferCache.push(buffer);
-      context.totalChunkSize += buffer.length;
+      handleBufferCaching(context, buffer);
       return;
     }
 
-    while (context.offset < context.buffer.length) {
-      const offset = context.offset;
-      const type = context.buffer[context.offset++];
-      const response = parseType(context, type);
+    if (!shouldContinue) return;
 
-      if (response === undefined) {
-        if (!(context.arrayCache.length || context.bufferCache.length)) {
-          context.offset = offset;
-        }
-
-        return;
-      }
-
-      if (response instanceof Error) {
-        options.onError(response);
-      } else {
-        options.onReply(response);
-      }
+    const completed = processParsedResponses(context, options);
+    if (completed) {
+      context.buffer = null;
     }
-
-    context.buffer = null;
   };
 }

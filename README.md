@@ -1,8 +1,8 @@
-# redis-on-workers
+# `redis-on-workers`
 
-Connect to your Redis server using `cloudflare:sockets`.
+Connect to your Redis server in Cloudflare Workers using `cloudflare:sockets`.
 
-This package is designed to work with Cloudflare Workers, but it can also be used in node.js thanks to the implementation of [`cloudflare:sockets` for node.js](https://github.com/Ethan-Arrowood/socket).
+This package is designed to work with Cloudflare Workers, but it can also be used in Node.js thanks to the implementation of [`cloudflare:sockets` for Node.js](https://github.com/Ethan-Arrowood/socket).
 
 ## Installation
 
@@ -63,7 +63,7 @@ npm install @arrowood.dev/socket
 
 Create a new Redis client, does NOT connect to the server yet, the connection will be established when the first command is sent.
 
-Or you can start connection immediately by using `redis.startConnection()`.
+You can retrieve (or start) the connection using `await redis.connection()`.
 
 ### `CreateRedisOptions`
 
@@ -71,3 +71,7 @@ Or you can start connection immediately by using `redis.startConnection()`.
 - `tls` (boolean): Whether to use TLS. Default: `false`.
 - `logger` (function): A function to log debug messages.
 - `connectFn` (function): Polyfill for `cloudflare:sockets`'s `connect` function if you're using it in node.js. Default: `undefined`.
+
+## License
+
+MIT

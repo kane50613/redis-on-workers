@@ -1,6 +1,6 @@
-import { Socket } from "@arrowood.dev/socket";
 import { doesNotReject, equal } from "node:assert";
 import { test } from "node:test";
+import { Socket } from "@arrowood.dev/socket";
 import { getConnectFn } from "../src";
 
 test("get-connect-fn", async () => {

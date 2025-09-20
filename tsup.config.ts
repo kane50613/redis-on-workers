@@ -6,6 +6,7 @@ export default defineConfig({
   external: ["cloudflare:sockets", "@arrowood.dev/socket"],
   dts: true,
   clean: true,
+  minify: true,
   target: "esnext",
   format: ["cjs", "esm"],
 });

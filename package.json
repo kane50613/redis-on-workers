@@ -4,22 +4,20 @@
   "description": "Connect to your Redis server using cloudflare:sockets",
   "scripts": {
     "build": "tsup",
-    "test": "tsx --test"
+    "lint": "biome ci .",
+    "lint:fix": "biome check --write --unsafe .",
+    "typecheck": "tsc --noEmit"
   },
   "main": "dist/index.mjs",
   "files": [
     "dist",
     "package.json",
-    "README.md",
-    "LICENSE"
+    "README.md"
   ],
-  "typings": "dist/index.d.ts",
   "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
+    "types": "./dist/index.d.ts",
+    "import": "./dist/index.js",
+    "require": "./dist/index.cjs"
   },
   "keywords": [
     "redis",
@@ -33,16 +31,19 @@
     "name": "Kane",
     "email": "kane@yeecord.com"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yeecord/redis-on-workers.git"
+  },
   "type": "module",
   "license": "MIT",
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20241011.0",
-    "@types/node": "^22.7.5",
-    "prettier": "^3.3.3",
-    "prettier-plugin-organize-imports": "^4.1.0",
-    "tsup": "^8.3.0",
-    "tsx": "^4.19.1",
-    "typescript": "^5.6.3"
+    "@biomejs/biome": "^2.2.4",
+    "@changesets/cli": "^2.29.7",
+    "@cloudflare/workers-types": "^4.20250920.0",
+    "@types/node": "^24.5.2",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.2"
   },
   "optionalDependencies": {
     "@arrowood.dev/socket": "^0.2.0"

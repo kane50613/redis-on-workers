@@ -17,11 +17,11 @@ test("create-redis", async () => {
 
   equal(await redis.send("DEL", "foo"), 1);
 
-  equal(redis.connected, true);
+  equal(await redis.isConnected(), true);
 
   equal(await redis.sendOnce("GET", "foo"), null);
 
-  equal(redis.connected, false);
+  equal(await redis.isConnected(), false);
 
   equal(await redis.sendOnce("PING"), "PONG");
 });

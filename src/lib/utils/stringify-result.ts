@@ -1,4 +1,4 @@
-import { RedisResponse, StringifyRedisResponse } from "../../type";
+import type { RedisResponse, StringifyRedisResponse } from "../../type";
 
 export function stringifyResult(result: RedisResponse): StringifyRedisResponse {
   if (Array.isArray(result)) {
