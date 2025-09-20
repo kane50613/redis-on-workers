@@ -10,7 +10,6 @@
     "release": "changeset publish",
     "version": "changeset version"
   },
-  "main": "dist/index.mjs",
   "files": [
     "dist",
     "package.json",
