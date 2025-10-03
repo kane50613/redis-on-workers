@@ -6,9 +6,7 @@
     "build": "tsup",
     "lint": "biome ci .",
     "lint:fix": "biome check --write --unsafe .",
-    "typecheck": "tsc --noEmit",
-    "release": "changeset publish",
-    "version": "changeset version"
+    "typecheck": "tsc --noEmit"
   },
   "files": [
     "dist",
