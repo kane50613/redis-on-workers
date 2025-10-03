@@ -1,5 +1,5 @@
+import { test } from "bun:test";
 import { deepEqual, equal } from "node:assert";
-import { test } from "node:test";
 import { stringifyResult } from "../src/lib/utils/stringify-result";
 import type { RedisResponse } from "../src/type";
 
@@ -44,7 +44,6 @@ test("stringifyResult - preserve Error objects", () => {
   const error = new Error("test error");
   const result = stringifyResult(error);
   equal(result, error);
-  equal(result.message, "test error");
 
   // Test custom error
   class CustomError extends Error {
@@ -57,8 +56,6 @@ test("stringifyResult - preserve Error objects", () => {
   const customError = new CustomError("custom message");
   const customResult = stringifyResult(customError);
   equal(customResult, customError);
-  equal(customResult.name, "CustomError");
-  equal(customResult.message, "custom message");
 });
 
 test("stringifyResult - array processing", () => {

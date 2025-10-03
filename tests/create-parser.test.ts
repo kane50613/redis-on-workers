@@ -1,5 +1,5 @@
+import { test } from "bun:test";
 import { deepEqual, equal, throws } from "node:assert";
-import { test } from "node:test";
 import { createParser } from "../src/lib/utils/create-parser";
 import type { RedisResponse } from "../src/type";
 

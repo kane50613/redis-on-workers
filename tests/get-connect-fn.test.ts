@@ -1,5 +1,5 @@
+import { test } from "bun:test";
 import { doesNotReject, equal } from "node:assert";
-import { test } from "node:test";
 import { Socket } from "@arrowood.dev/socket";
 import { getConnectFn } from "../src";
 

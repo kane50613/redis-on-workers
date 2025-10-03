@@ -1,5 +1,5 @@
+import { test } from "bun:test";
 import { deepEqual } from "node:assert";
-import { test } from "node:test";
 import { encodeCommand } from "../src/lib/utils/encode-command";
 
 test("encode-command", () => {

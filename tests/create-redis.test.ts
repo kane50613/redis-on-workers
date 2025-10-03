@@ -1,5 +1,5 @@
+import { test } from "bun:test";
 import assert, { deepEqual, equal } from "node:assert";
-import { test } from "node:test";
 import { createRedis } from "../src";
 
 test("create-redis", async () => {
