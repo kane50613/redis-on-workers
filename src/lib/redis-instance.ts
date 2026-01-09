@@ -234,6 +234,8 @@ export class RedisInstance {
 
     const chunks: Array<string | Uint8Array> = [];
 
+    const currentBatchPromises: Promise<RedisResponse>[] = [];
+
     for (const command of commands) {
       const { promise, resolve, reject } =
         Promise.withResolvers<RedisResponse>();
@@ -243,6 +245,8 @@ export class RedisInstance {
         resolve,
         reject,
       });
+
+      currentBatchPromises.push(promise);
 
       const payload = encodeCommand(
         command.map((arg) => (arg instanceof Uint8Array ? arg : String(arg))),
@@ -257,7 +261,7 @@ export class RedisInstance {
       );
     }
 
-    return Promise.all(this.promiseQueue.map((p) => p.promise));
+    return Promise.all(currentBatchPromises);
   }
 
   private async startMessageListener(connection: ConnectionInstance) {
