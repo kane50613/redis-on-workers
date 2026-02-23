@@ -1,5 +1,4 @@
-import { test } from "bun:test";
-import { deepEqual, equal, throws } from "node:assert";
+import { expect, test } from "bun:test";
 import { createParser } from "../src/lib/utils/create-parser";
 import type { RedisResponse } from "../src/type";
 
@@ -15,9 +14,9 @@ test("create-parser - simple string", () => {
   // Simple string response
   parser(new TextEncoder().encode("+OK\r\n"));
 
-  equal(responses.length, 1);
-  equal(errors.length, 0);
-  deepEqual(responses[0], new TextEncoder().encode("OK"));
+  expect(responses.length).toBe(1);
+  expect(errors.length).toBe(0);
+  expect(responses[0]).toEqual(new TextEncoder().encode("OK"));
 });
 
 test("create-parser - error", () => {
@@ -32,9 +31,9 @@ test("create-parser - error", () => {
   // Error response
   parser(new TextEncoder().encode("-ERR something went wrong\r\n"));
 
-  equal(responses.length, 0);
-  equal(errors.length, 1);
-  equal(errors[0].message, "ERR something went wrong");
+  expect(responses.length).toBe(0);
+  expect(errors.length).toBe(1);
+  expect(errors[0].message).toBe("ERR something went wrong");
 });
 
 test("create-parser - integer", () => {
@@ -49,9 +48,9 @@ test("create-parser - integer", () => {
   // Integer response
   parser(new TextEncoder().encode(":42\r\n"));
 
-  equal(responses.length, 1);
-  equal(errors.length, 0);
-  equal(responses[0], 42);
+  expect(responses.length).toBe(1);
+  expect(errors.length).toBe(0);
+  expect(responses[0]).toBe(42);
 });
 
 test("create-parser - negative integer", () => {
@@ -66,9 +65,9 @@ test("create-parser - negative integer", () => {
   // Negative integer response
   parser(new TextEncoder().encode(":-123\r\n"));
 
-  equal(responses.length, 1);
-  equal(errors.length, 0);
-  equal(responses[0], -123);
+  expect(responses.length).toBe(1);
+  expect(errors.length).toBe(0);
+  expect(responses[0]).toBe(-123);
 });
 
 test("create-parser - bulk string", () => {
@@ -83,9 +82,9 @@ test("create-parser - bulk string", () => {
   // Bulk string response
   parser(new TextEncoder().encode("$5\r\nhello\r\n"));
 
-  equal(responses.length, 1);
-  equal(errors.length, 0);
-  deepEqual(responses[0], new TextEncoder().encode("hello"));
+  expect(responses.length).toBe(1);
+  expect(errors.length).toBe(0);
+  expect(responses[0]).toEqual(new TextEncoder().encode("hello"));
 });
 
 test("create-parser - empty bulk string", () => {
@@ -100,9 +99,9 @@ test("create-parser - empty bulk string", () => {
   // Empty bulk string response
   parser(new TextEncoder().encode("$0\r\n\r\n"));
 
-  equal(responses.length, 1);
-  equal(errors.length, 0);
-  deepEqual(responses[0], new TextEncoder().encode(""));
+  expect(responses.length).toBe(1);
+  expect(errors.length).toBe(0);
+  expect(responses[0]).toEqual(new TextEncoder().encode(""));
 });
 
 test("create-parser - null bulk string", () => {
@@ -117,9 +116,9 @@ test("create-parser - null bulk string", () => {
   // Null bulk string response
   parser(new TextEncoder().encode("$-1\r\n"));
 
-  equal(responses.length, 1);
-  equal(errors.length, 0);
-  equal(responses[0], null);
+  expect(responses.length).toBe(1);
+  expect(errors.length).toBe(0);
+  expect(responses[0]).toBe(null);
 });
 
 test("create-parser - array", () => {
@@ -134,9 +133,9 @@ test("create-parser - array", () => {
   // Array response with two bulk strings
   parser(new TextEncoder().encode("*2\r\n$3\r\nfoo\r\n$3\r\nbar\r\n"));
 
-  equal(responses.length, 1);
-  equal(errors.length, 0);
-  deepEqual(responses[0], [
+  expect(responses.length).toBe(1);
+  expect(errors.length).toBe(0);
+  expect(responses[0]).toEqual([
     new TextEncoder().encode("foo"),
     new TextEncoder().encode("bar"),
   ]);
@@ -154,9 +153,9 @@ test("create-parser - empty array", () => {
   // Empty array response
   parser(new TextEncoder().encode("*0\r\n"));
 
-  equal(responses.length, 1);
-  equal(errors.length, 0);
-  deepEqual(responses[0], []);
+  expect(responses.length).toBe(1);
+  expect(errors.length).toBe(0);
+  expect(responses[0]).toEqual([]);
 });
 
 test("create-parser - null array", () => {
@@ -171,9 +170,9 @@ test("create-parser - null array", () => {
   // Null array response
   parser(new TextEncoder().encode("*-1\r\n"));
 
-  equal(responses.length, 1);
-  equal(errors.length, 0);
-  equal(responses[0], null);
+  expect(responses.length).toBe(1);
+  expect(errors.length).toBe(0);
+  expect(responses[0]).toBe(null);
 });
 
 test("create-parser - nested array", () => {
@@ -190,9 +189,9 @@ test("create-parser - nested array", () => {
     new TextEncoder().encode("*2\r\n*2\r\n:1\r\n:2\r\n*2\r\n:3\r\n:4\r\n"),
   );
 
-  equal(responses.length, 1);
-  equal(errors.length, 0);
-  deepEqual(responses[0], [
+  expect(responses.length).toBe(1);
+  expect(errors.length).toBe(0);
+  expect(responses[0]).toEqual([
     [1, 2],
     [3, 4],
   ]);
@@ -212,9 +211,9 @@ test("create-parser - mixed array", () => {
     new TextEncoder().encode("*4\r\n+OK\r\n:42\r\n$5\r\nhello\r\n$-1\r\n"),
   );
 
-  equal(responses.length, 1);
-  equal(errors.length, 0);
-  deepEqual(responses[0], [
+  expect(responses.length).toBe(1);
+  expect(errors.length).toBe(0);
+  expect(responses[0]).toEqual([
     new TextEncoder().encode("OK"),
     42,
     new TextEncoder().encode("hello"),
@@ -235,10 +234,10 @@ test("create-parser - chunked response", () => {
   parser(new TextEncoder().encode("+OK\r\n*2\r\n$3\r\n"));
   parser(new TextEncoder().encode("foo\r\n$3\r\nbar\r\n"));
 
-  equal(responses.length, 2);
-  equal(errors.length, 0);
-  deepEqual(responses[0], new TextEncoder().encode("OK"));
-  deepEqual(responses[1], [
+  expect(responses.length).toBe(2);
+  expect(errors.length).toBe(0);
+  expect(responses[0]).toEqual(new TextEncoder().encode("OK"));
+  expect(responses[1]).toEqual([
     new TextEncoder().encode("foo"),
     new TextEncoder().encode("bar"),
   ]);
@@ -267,9 +266,9 @@ test("create-parser - large bulk string", () => {
   parser(chunk1);
   parser(chunk2);
 
-  equal(responses.length, 1);
-  equal(errors.length, 0);
-  deepEqual(responses[0], encoder.encode(largeString));
+  expect(responses.length).toBe(1);
+  expect(errors.length).toBe(0);
+  expect(responses[0]).toEqual(encoder.encode(largeString));
 });
 
 test("create-parser - invalid protocol", () => {
@@ -284,11 +283,11 @@ test("create-parser - invalid protocol", () => {
   // Invalid protocol character
   parser(new TextEncoder().encode("!INVALID\r\n"));
 
-  equal(responses.length, 0);
-  equal(errors.length, 1);
-  throws(() => {
+  expect(responses.length).toBe(0);
+  expect(errors.length).toBe(1);
+  expect(() => {
     throw errors[0];
-  }, /Protocol error/);
+  }).toThrow(/Protocol error/);
 });
 
 test("create-parser - incomplete response", () => {
@@ -304,15 +303,15 @@ test("create-parser - incomplete response", () => {
   parser(new TextEncoder().encode("$5\r\nhello"));
 
   // No response should be emitted yet
-  equal(responses.length, 0);
-  equal(errors.length, 0);
+  expect(responses.length).toBe(0);
+  expect(errors.length).toBe(0);
 
   // Send the rest
   parser(new TextEncoder().encode("\r\n"));
 
-  equal(responses.length, 1);
-  equal(errors.length, 0);
-  deepEqual(responses[0], new TextEncoder().encode("hello"));
+  expect(responses.length).toBe(1);
+  expect(errors.length).toBe(0);
+  expect(responses[0]).toEqual(new TextEncoder().encode("hello"));
 });
 
 test("create-parser - multiple responses in one buffer", () => {
@@ -327,11 +326,11 @@ test("create-parser - multiple responses in one buffer", () => {
   // Multiple responses in one buffer
   parser(new TextEncoder().encode("+OK\r\n:42\r\n$5\r\nhello\r\n"));
 
-  equal(responses.length, 3);
-  equal(errors.length, 0);
-  deepEqual(responses[0], new TextEncoder().encode("OK"));
-  equal(responses[1], 42);
-  deepEqual(responses[2], new TextEncoder().encode("hello"));
+  expect(responses.length).toBe(3);
+  expect(errors.length).toBe(0);
+  expect(responses[0]).toEqual(new TextEncoder().encode("OK"));
+  expect(responses[1]).toBe(42);
+  expect(responses[2]).toEqual(new TextEncoder().encode("hello"));
 });
 
 test("create-parser - concurrent instances no interference", () => {
@@ -358,10 +357,10 @@ test("create-parser - concurrent instances no interference", () => {
 
   // Verify each parser got its own correct data
   results.forEach(({ parserId, responses }) => {
-    equal(responses.length, 1);
+    expect(responses.length).toBe(1);
     const response = responses[0] as RedisResponse[];
-    equal(response[0], 1); // First element is always 1
-    equal((response[1] as Uint8Array).length, parserId + 1); // Second element length matches parser ID
+    expect(response[0]).toBe(1); // First element is always 1
+    expect((response[1] as Uint8Array).length).toBe(parserId + 1); // Second element length matches parser ID
   });
 });
 
@@ -388,10 +387,10 @@ test("create-parser - buffer pool isolation", () => {
   parser2(new TextEncoder().encode(data2));
 
   // Both should get their responses
-  equal(responses1.length, 1);
-  equal(responses2.length, 1);
-  equal((responses1[0] as Uint8Array).length, largeData.length);
-  equal((responses2[0] as Uint8Array).length, largeData.length);
+  expect(responses1.length).toBe(1);
+  expect(responses2.length).toBe(1);
+  expect((responses1[0] as Uint8Array).length).toBe(largeData.length);
+  expect((responses2[0] as Uint8Array).length).toBe(largeData.length);
 });
 
 test("create-parser - cleanup prevents memory leaks", async () => {
@@ -465,14 +464,14 @@ test("create-parser - side effect isolation", () => {
   parserA(new TextEncoder().encode(":123\r\n"));
 
   // Verify no cross-contamination
-  equal(responsesA.length, 2);
-  equal(errorsA.length, 0);
-  equal(responsesB.length, 0);
-  equal(errorsB.length, 1);
+  expect(responsesA.length).toBe(2);
+  expect(errorsA.length).toBe(0);
+  expect(responsesB.length).toBe(0);
+  expect(errorsB.length).toBe(1);
 
-  deepEqual(responsesA[0], new TextEncoder().encode("OK"));
-  equal(responsesA[1], 123);
-  equal(errorsB[0].message, "ERROR from parser B");
+  expect(responsesA[0]).toEqual(new TextEncoder().encode("OK"));
+  expect(responsesA[1]).toBe(123);
+  expect(errorsB[0].message).toBe("ERROR from parser B");
 });
 
 test("create-parser - buffer state isolation", () => {
@@ -494,22 +493,22 @@ test("create-parser - buffer state isolation", () => {
   parser2(new TextEncoder().encode("$5\r\nworld"));
 
   // At this point, neither should have emitted responses
-  equal(responses1.length, 0);
-  equal(responses2.length, 0);
+  expect(responses1.length).toBe(0);
+  expect(responses2.length).toBe(0);
 
   // Complete parser1's response
   parser1(new TextEncoder().encode("\r\n"));
-  equal(responses1.length, 1);
-  equal(responses2.length, 0); // Parser2 should still be waiting
+  expect(responses1.length).toBe(1);
+  expect(responses2.length).toBe(0); // Parser2 should still be waiting
 
   // Complete parser2's response
   parser2(new TextEncoder().encode("\r\n"));
-  equal(responses1.length, 1);
-  equal(responses2.length, 1);
+  expect(responses1.length).toBe(1);
+  expect(responses2.length).toBe(1);
 
   // Verify correct data
-  deepEqual(responses1[0], new TextEncoder().encode("hello"));
-  deepEqual(responses2[0], new TextEncoder().encode("world"));
+  expect(responses1[0]).toEqual(new TextEncoder().encode("hello"));
+  expect(responses2[0]).toEqual(new TextEncoder().encode("world"));
 });
 
 test("create-parser - resource cleanup on error", () => {
@@ -529,12 +528,12 @@ test("create-parser - resource cleanup on error", () => {
   parser(new TextEncoder().encode("!INVALID2\r\n"));
   parser(new TextEncoder().encode("!INVALID3\r\n"));
 
-  equal(errorCount, 3);
-  equal(errors.length, 3);
+  expect(errorCount).toBe(3);
+  expect(errors.length).toBe(3);
 
   // Parser should still be functional after errors
   parser(new TextEncoder().encode("+OK\r\n"));
-  equal(errorCount, 3); // No additional errors
+  expect(errorCount).toBe(3); // No additional errors
 });
 
 test("create-parser - memory pressure handling", () => {
@@ -555,10 +554,10 @@ test("create-parser - memory pressure handling", () => {
   });
 
   // All responses should be received
-  equal(responses.length, sizes.length);
+  expect(responses.length).toBe(sizes.length);
 
   // Verify each response size is correct
   responses.forEach((response, index) => {
-    equal((response as Uint8Array).length, sizes[index]);
+    expect((response as Uint8Array).length).toBe(sizes[index]);
   });
 });

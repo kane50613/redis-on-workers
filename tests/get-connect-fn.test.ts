@@ -1,10 +1,9 @@
-import { test } from "bun:test";
-import { doesNotReject, equal } from "node:assert";
+import { expect, test } from "bun:test";
 import { Socket } from "@arrowood.dev/socket";
 import { getConnectFn } from "../src";
 
 test("get-connect-fn", async () => {
-  await doesNotReject(getConnectFn);
+  expect(await getConnectFn()).toBeInstanceOf(Function);
 
   const fn = () => {
     return new Socket({
@@ -13,5 +12,5 @@ test("get-connect-fn", async () => {
     });
   };
 
-  equal(await getConnectFn(fn), fn);
+  expect(await getConnectFn(fn)).toBe(fn);
 });

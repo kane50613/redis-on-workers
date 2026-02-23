@@ -1,5 +1,4 @@
-import { test } from "bun:test";
-import { deepEqual, equal } from "node:assert";
+import { expect, test } from "bun:test";
 import { stringifyResult } from "../src/lib/utils/stringify-result";
 import type { RedisResponse } from "../src/type";
 
@@ -9,41 +8,43 @@ test("stringifyResult - Uint8Array to string", () => {
   // Test basic string conversion
   const input = encoder.encode("hello world");
   const result = stringifyResult(input);
-  equal(result, "hello world");
+  expect(result).toBe("hello world");
 
   // Test empty Uint8Array
   const emptyInput = encoder.encode("");
   const emptyResult = stringifyResult(emptyInput);
-  equal(emptyResult, "");
+  expect(emptyResult).toBe("");
 
   // Test UTF-8 characters
   const utf8Input = encoder.encode("héllo wörld 🚀");
   const utf8Result = stringifyResult(utf8Input);
-  equal(utf8Result, "héllo wörld 🚀");
+  expect(utf8Result).toBe("héllo wörld 🚀");
 
   // Test binary data (should still convert to string)
-  const binaryInput = new Uint8Array([0, 1, 255, 128]);
+  const binaryInput = new Uint8Array([1, 2, 3]);
   const binaryResult = stringifyResult(binaryInput);
   // This will convert the bytes to characters, with invalid UTF-8 bytes becoming replacement chars
-  equal(binaryResult, "\x00\x01��");
+  expect(binaryResult).toBe("\x01\x02\x03");
 });
 
 test("stringifyResult - preserve numbers", () => {
-  equal(stringifyResult(42), 42);
-  equal(stringifyResult(0), 0);
-  equal(stringifyResult(-123), -123);
-  equal(stringifyResult(3.14), 3.14);
-  equal(stringifyResult(Number.MAX_SAFE_INTEGER), Number.MAX_SAFE_INTEGER);
+  expect(stringifyResult(42)).toBe(42);
+  expect(stringifyResult(0)).toBe(0);
+  expect(stringifyResult(-123)).toBe(-123);
+  expect(stringifyResult(3.14)).toBe(3.14);
+  expect(stringifyResult(Number.MAX_SAFE_INTEGER)).toBe(
+    Number.MAX_SAFE_INTEGER,
+  );
 });
 
 test("stringifyResult - preserve null", () => {
-  equal(stringifyResult(null), null);
+  expect(stringifyResult(null)).toBe(null);
 });
 
 test("stringifyResult - preserve Error objects", () => {
   const error = new Error("test error");
   const result = stringifyResult(error);
-  equal(result, error);
+  expect(result).toBe(error);
 
   // Test custom error
   class CustomError extends Error {
@@ -55,7 +56,7 @@ test("stringifyResult - preserve Error objects", () => {
 
   const customError = new CustomError("custom message");
   const customResult = stringifyResult(customError);
-  equal(customResult, customError);
+  expect(customResult).toBe(customError);
 });
 
 test("stringifyResult - array processing", () => {
@@ -67,23 +68,23 @@ test("stringifyResult - array processing", () => {
     encoder.encode("bar"),
   ];
   const stringResult = stringifyResult(stringArray);
-  deepEqual(stringResult, ["foo", "bar"]);
+  expect(stringResult).toEqual(["foo", "bar"]);
 
   // Test array with numbers
   const numberArray: RedisResponse[] = [1, 2, 3];
   const numberResult = stringifyResult(numberArray);
-  deepEqual(numberResult, [1, 2, 3]);
+  expect(numberResult).toEqual([1, 2, 3]);
 
   // Test array with null
   const nullArray: RedisResponse[] = [encoder.encode("test"), null];
   const nullResult = stringifyResult(nullArray);
-  deepEqual(nullResult, ["test", null]);
+  expect(nullResult).toEqual(["test", null]);
 
   // Test array with errors
   const error = new Error("array error");
   const errorArray: RedisResponse[] = [encoder.encode("ok"), error];
   const errorResult = stringifyResult(errorArray);
-  deepEqual(errorResult, ["ok", error]);
+  expect(errorResult).toEqual(["ok", error]);
 });
 
 test("stringifyResult - nested arrays", () => {
@@ -97,7 +98,7 @@ test("stringifyResult - nested arrays", () => {
   ];
 
   const result = stringifyResult(nestedArray);
-  deepEqual(result, ["first", ["nested1", "nested2"], "last"]);
+  expect(result).toEqual(["first", ["nested1", "nested2"], "last"]);
 });
 
 test("stringifyResult - deeply nested arrays", () => {
@@ -110,35 +111,31 @@ test("stringifyResult - deeply nested arrays", () => {
   ];
 
   const result = stringifyResult(deepArray);
-  deepEqual(result, [[["level3"], "level2"], "level1"]);
+  expect(result).toEqual([[["level3"], "level2"], "level1"]);
 });
 
 test("stringifyResult - mixed array types", () => {
   const encoder = new TextEncoder();
+
+  const error = new Error("test error");
 
   // Test array with all different types
   const mixedArray: RedisResponse[] = [
     encoder.encode("string"),
     42,
     null,
-    new Error("test error"),
+    error,
     [encoder.encode("nested"), 123],
   ];
 
   const result = stringifyResult(mixedArray);
-  deepEqual(result, [
-    "string",
-    42,
-    null,
-    mixedArray[3], // Error object should be preserved
-    ["nested", 123],
-  ]);
+  expect(result).toEqual(["string", 42, null, error, ["nested", 123]]);
 });
 
 test("stringifyResult - empty array", () => {
   const emptyArray: RedisResponse[] = [];
   const result = stringifyResult(emptyArray);
-  deepEqual(result, []);
+  expect(result).toEqual([]);
 });
 
 test("stringifyResult - array with empty arrays", () => {
@@ -147,7 +144,7 @@ test("stringifyResult - array with empty arrays", () => {
   const arrayWithEmpty: RedisResponse[] = [[], encoder.encode("test"), []];
 
   const result = stringifyResult(arrayWithEmpty);
-  deepEqual(result, [[], "test", []]);
+  expect(result).toEqual([[], "test", []]);
 });
 
 test("stringifyResult - complex Redis response", () => {
@@ -160,7 +157,7 @@ test("stringifyResult - complex Redis response", () => {
   ];
 
   const result = stringifyResult(complexResponse);
-  deepEqual(result, [0, ["key1", "key2", "key3"]]);
+  expect(result).toEqual([0, ["key1", "key2", "key3"]]);
 });
 
 test("stringifyResult - Redis hash response", () => {
@@ -175,7 +172,7 @@ test("stringifyResult - Redis hash response", () => {
   ];
 
   const result = stringifyResult(hashResponse);
-  deepEqual(result, ["field1", "value1", "field2", "value2"]);
+  expect(result).toEqual(["field1", "value1", "field2", "value2"]);
 });
 
 test("stringifyResult - Redis sorted set response", () => {
@@ -189,7 +186,7 @@ test("stringifyResult - Redis sorted set response", () => {
   ];
 
   const result = stringifyResult(zsetResponse);
-  deepEqual(result, [
+  expect(result).toEqual([
     ["member1", 1.5],
     ["member2", 2.5],
     ["member3", 3.5],

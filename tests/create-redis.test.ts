@@ -1,5 +1,4 @@
-import { test } from "bun:test";
-import assert, { deepEqual, equal } from "node:assert";
+import { expect, test } from "bun:test";
 import { createRedis } from "../src";
 
 test("create-redis", async () => {
@@ -9,29 +8,29 @@ test("create-redis", async () => {
 
   const PONG = encoder.encode("PONG");
 
-  deepEqual(await redis.sendRaw("PING"), PONG);
+  expect(await redis.sendRaw("PING")).toEqual(PONG);
 
-  equal(await redis.send("SET", "foo", "bar"), "OK");
+  expect(await redis.send("SET", "foo", "bar")).toBe("OK");
 
-  equal(await redis.send("GET", "foo"), "bar");
+  expect(await redis.send("GET", "foo")).toBe("bar");
 
-  equal(await redis.send("DEL", "foo"), 1);
+  expect(await redis.send("DEL", "foo")).toBe(1);
 
-  equal(await redis.isConnected(), true);
+  expect(await redis.isConnected()).toBe(true);
 
-  equal(await redis.sendOnce("GET", "foo"), null);
+  expect(await redis.sendOnce("GET", "foo")).toBe(null);
 
-  equal(await redis.isConnected(), false);
+  expect(await redis.isConnected()).toBe(false);
 
-  equal(await redis.sendOnce("PING"), "PONG");
+  expect(await redis.sendOnce("PING")).toBe("PONG");
 });
 
 test("full-text-search", async () => {
   const redis = createRedis("redis://localhost:6379/0");
 
-  equal(await redis.send("FLUSHALL"), "OK");
+  expect(await redis.send("FLUSHALL")).toBe("OK");
 
-  equal(
+  expect(
     await redis.send(
       "FT.CREATE",
       "idx",
@@ -44,10 +43,9 @@ test("full-text-search", async () => {
       "field1",
       "TEXT",
     ),
-    "OK",
-  );
+  ).toBe("OK");
 
-  equal(
+  expect(
     await redis.send(
       "FT.ADD",
       "idx",
@@ -57,31 +55,23 @@ test("full-text-search", async () => {
       "field1",
       "value1",
     ),
-    "OK",
-  );
+  ).toBe("OK");
 
   const searchResult1 = await redis.send("FT.SEARCH", "idx", "@field1:value1");
 
-  assert(searchResult1);
-  equal(searchResult1[0], 1); // Number of results
-  equal(searchResult1[1], "doc:1"); // Document ID
+  expect(searchResult1).toEqual([1, "doc:1", ["field1", "value1"]]);
 
   const searchResult2 = await redis.send("FT.SEARCH", "idx", "@field1:value2");
 
-  assert(searchResult2);
-  equal(searchResult2[0], 0); // No results
+  expect(searchResult2).toEqual([0]);
 
   const searchResult3 = await redis.send("FT.SEARCH", "idx", "@field1:value*");
 
-  assert(searchResult3);
-  equal(searchResult3[0], 1);
-  equal(searchResult3[1], "doc:1");
+  expect(searchResult3).toEqual([1, "doc:1", ["field1", "value1"]]);
 
   const searchResult4 = await redis.send("FT.SEARCH", "idx", "@field1:*value*");
 
-  assert(searchResult4);
-  equal(searchResult4[0], 1);
-  equal(searchResult4[1], "doc:1");
+  expect(searchResult4).toEqual([1, "doc:1", ["field1", "value1"]]);
 
   await redis.close();
 });
@@ -89,9 +79,9 @@ test("full-text-search", async () => {
 test("error-handling", async () => {
   const redis = createRedis("redis://localhost:6379/0");
 
-  assert.rejects(redis.sendOnce("MY_GO"), {
-    message: "ERR unknown command 'MY_GO', with args beginning with: ",
-  });
+  expect(redis.sendOnce("MY_GO")).rejects.toThrow(
+    "ERR unknown command 'MY_GO'",
+  );
 
   await redis.close();
 });

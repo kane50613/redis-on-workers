@@ -11,10 +11,8 @@ export type RedisResponse =
   | RedisResponse[];
 
 export type StringifyRedisResponse =
+  | Exclude<RedisResponse, Uint8Array>
   | string
-  | number
-  | null
-  | Error
   | StringifyRedisResponse[];
 
 interface BaseRedisOptions {
