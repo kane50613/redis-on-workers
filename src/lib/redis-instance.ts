@@ -232,17 +232,14 @@ export class RedisInstance {
   private async writeCommandsToConnection(commands: Command[]) {
     const connection = await this.connection();
 
-    const chunks: Array<string | Uint8Array> = [];
+    const chunks = [];
+    const pendingReplies = [];
 
     for (const command of commands) {
-      const { promise, resolve, reject } =
-        Promise.withResolvers<RedisResponse>();
+      const resolvers = Promise.withResolvers<RedisResponse>();
 
-      this.promiseQueue.push({
-        promise,
-        resolve,
-        reject,
-      });
+      this.promiseQueue.push(resolvers);
+      pendingReplies.push(resolvers.promise);
 
       const payload = encodeCommand(
         command.map((arg) => (arg instanceof Uint8Array ? arg : String(arg))),
@@ -257,7 +254,7 @@ export class RedisInstance {
       );
     }
 
-    return Promise.all(this.promiseQueue.map((p) => p.promise));
+    return Promise.all(pendingReplies);
   }
 
   private async startMessageListener(connection: ConnectionInstance) {

@@ -85,3 +85,32 @@ test("error-handling", async () => {
 
   await redis.close();
 });
+
+// https://github.com/kane50613/redis-on-workers/issues/18
+test("concurrent send keeps replies matched to each command", async () => {
+  const redis = createRedis("redis://localhost:6379/0");
+
+  expect(await redis.send("FLUSHALL")).toBe("OK");
+
+  const entryA1 = await redis.send("XADD", "mystream:a", "*", "field", "a1");
+  const entryA2 = await redis.send("XADD", "mystream:a", "*", "field", "a2");
+  const entryB1 = await redis.send("XADD", "mystream:b", "*", "field", "b1");
+  const entryB2 = await redis.send("XADD", "mystream:b", "*", "field", "b2");
+
+  const [firstEntry, lastEntry, countA, countB] = await Promise.all([
+    redis.send("XRANGE", "mystream:a", "-", "+", "COUNT", "1"),
+    redis.send("XREVRANGE", "mystream:b", "+", "-", "COUNT", "1"),
+    redis.send("XLEN", "mystream:a"),
+    redis.send("XLEN", "mystream:b"),
+  ]);
+
+  expect(firstEntry).toEqual([[entryA1, ["field", "a1"]]]);
+  expect(lastEntry).toEqual([[entryB2, ["field", "b2"]]]);
+  expect(countA).toBe(2);
+  expect(countB).toBe(2);
+
+  expect(entryA2).toEqual(expect.any(String));
+  expect(entryB1).toEqual(expect.any(String));
+
+  await redis.close();
+});
