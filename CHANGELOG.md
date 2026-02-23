@@ -1,5 +1,12 @@
 # redis-on-workers
 
+## 0.4.2
+
+### Patch Changes
+
+- 55e8c46: improve redis connection stability, add ACL auth support, optimize encoding
+- b4ebcf5: isolate pending replies per send call to avoid `Promise.all` mixups
+
 ## 0.4.1
 
 ### Patch Changes
