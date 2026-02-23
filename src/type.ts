@@ -15,9 +15,18 @@ export type StringifyRedisResponse =
   | string
   | StringifyRedisResponse[];
 
+export interface RedisConnectConfig {
+  hostname: string;
+  port: number;
+  username?: string;
+  password?: string;
+  database?: string;
+  tls?: boolean;
+}
+
 interface BaseRedisOptions {
   tls?: boolean;
-  logger?: (...message: string[]) => void;
+  logger?: (...message: unknown[]) => void;
   connectFn?: typeof connect | typeof nodeConnect;
 }
 

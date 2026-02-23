@@ -2,6 +2,7 @@ import type {
   Command,
   ConnectionInstance,
   CreateRedisOptions,
+  RedisConnectConfig,
   RedisResponse,
 } from "../type";
 import { createParser } from "./utils/create-parser";
@@ -10,16 +11,20 @@ import { getConnectFn } from "./utils/get-connect-fn";
 import { stringifyResult } from "./utils/stringify-result";
 
 export class RedisInstance {
-  private encoder = new TextEncoder();
+  private static readonly connectionClosedError = new Error(
+    "Redis connection closed",
+  );
+
   private decoder = new TextDecoder();
 
   private promiseQueue: ReturnType<
     typeof Promise.withResolvers<RedisResponse>
   >[] = [];
+  private writeChain = Promise.resolve();
 
   public options: CreateRedisOptions;
   private connectionInstance?: Promise<ConnectionInstance>;
-  public config;
+  public config: RedisConnectConfig;
 
   private isInitialized = false;
 
@@ -58,9 +63,16 @@ export class RedisInstance {
   }
 
   async isConnected() {
-    const connectionInstance = await this.connectionInstance;
+    if (!this.connectionInstance) {
+      return false;
+    }
 
-    return !!connectionInstance;
+    try {
+      const connectionInstance = await this.connectionInstance;
+      return !!connectionInstance;
+    } catch {
+      return false;
+    }
   }
 
   get tls() {
@@ -75,6 +87,8 @@ export class RedisInstance {
       });
 
       void (async () => {
+        let listenerError: Error | undefined;
+
         try {
           const connection = await this.connectionInstance;
 
@@ -84,18 +98,16 @@ export class RedisInstance {
 
           await this.startMessageListener(connection);
         } catch (e) {
-          if (e instanceof Error) {
-            this.logger?.(
-              "Error sending command",
-              e.message,
-              e.stack ?? "No stack",
-            );
-          }
-
-          throw e;
+          listenerError =
+            e instanceof Error ? e : new Error(`Listener failed: ${String(e)}`);
+          this.logger?.(
+            "Error sending command",
+            listenerError.message,
+            listenerError.stack ?? "No stack",
+          );
         } finally {
           this.logger?.("Listener closed");
-          await this.close();
+          await this.close(listenerError);
         }
       })();
     }
@@ -105,14 +117,16 @@ export class RedisInstance {
 
   private getConnectConfig() {
     if ("url" in this.options) {
-      const { hostname, port, password, pathname } = new URL(this.options.url);
+      const { hostname, port, username, password, pathname, protocol } =
+        new URL(this.options.url);
 
       return {
         hostname,
         port: Number(port) || 6379,
+        username: username || undefined,
         password,
         database: pathname.slice(1) || undefined,
-        tls: this.options.tls ?? this.options.url.includes("rediss://"),
+        tls: this.options.tls ?? protocol === "rediss:",
       };
     }
 
@@ -173,7 +187,11 @@ export class RedisInstance {
     const commands: Command[] = [];
 
     if (this.config.password) {
-      commands.push(["AUTH", this.config.password]);
+      if (this.config.username) {
+        commands.push(["AUTH", this.config.username, this.config.password]);
+      } else {
+        commands.push(["AUTH", this.config.password]);
+      }
     }
 
     if (this.config.database) {
@@ -232,8 +250,8 @@ export class RedisInstance {
   private async writeCommandsToConnection(commands: Command[]) {
     const connection = await this.connection();
 
-    const chunks = [];
-    const pendingReplies = [];
+    const chunks: Uint8Array[] = [];
+    const pendingReplies: Array<Promise<RedisResponse>> = [];
 
     for (const command of commands) {
       const resolvers = Promise.withResolvers<RedisResponse>();
@@ -248,13 +266,22 @@ export class RedisInstance {
       chunks.push(...payload);
     }
 
-    for (const chunk of chunks) {
-      await connection.writer.write(
-        chunk instanceof Uint8Array ? chunk : this.encoder.encode(chunk),
-      );
-    }
+    await this.enqueueWrite(async () => {
+      for (const chunk of chunks) {
+        await connection.writer.write(chunk);
+      }
+    });
 
     return Promise.all(pendingReplies);
+  }
+
+  private enqueueWrite(writeOperation: () => Promise<void>) {
+    const previousWrite = this.writeChain;
+    const nextWrite = previousWrite.then(writeOperation);
+
+    this.writeChain = nextWrite.catch(() => {});
+
+    return nextWrite;
   }
 
   private async startMessageListener(connection: ConnectionInstance) {
@@ -285,26 +312,35 @@ export class RedisInstance {
     }
 
     const connection = this.connectionInstance
-      ? await this.connectionInstance
+      ? await this.connectionInstance.catch(() => undefined)
       : undefined;
+
+    const closeError =
+      err ??
+      (this.promiseQueue.length > 0
+        ? RedisInstance.connectionClosedError
+        : undefined);
 
     this.connectionInstance = undefined;
     this.isInitialized = false;
+    this.writeChain = Promise.resolve();
 
-    if (!connection) {
-      return;
-    }
-
-    if (err) {
+    if (closeError) {
       for (const promise of this.promiseQueue) {
-        promise.reject(err);
+        promise.reject(closeError);
       }
     }
 
     this.promiseQueue = [];
 
-    await connection.socket.close();
-    await connection.writer.abort(err);
-    await connection.reader.cancel(err);
+    if (!connection) {
+      return;
+    }
+
+    await Promise.allSettled([
+      connection.socket.close(),
+      connection.writer.abort(closeError),
+      connection.reader.cancel(closeError),
+    ]);
   }
 }

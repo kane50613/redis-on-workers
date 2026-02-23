@@ -5,6 +5,8 @@
 
 import type { CreateParserOptions, RedisResponse } from "../../type";
 
+const decoder = new TextDecoder();
+
 function createParserContext(options: CreateParserOptions) {
   return {
     options,
@@ -138,7 +140,7 @@ function parseSimpleNumbers(parser: ParserContext) {
 
 function parseError(parser: ParserContext) {
   return new Error(
-    new TextDecoder().decode(parseSimpleString(parser)) || "Unknown error",
+    decoder.decode(parseSimpleString(parser)) || "Unknown error",
   );
 }
 

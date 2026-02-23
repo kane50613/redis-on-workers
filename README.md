@@ -42,7 +42,7 @@ const redis = createRedis("redis://<username>:<password>@<host>:<port>");
 
 await redis.sendRaw("SET", "foo", "bar");
 
-const value = await redis.sendRawOnce("GET", "foo");
+const value = await redis.sendOnceRaw("GET", "foo");
 
 const decoder = new TextDecoder();
 
