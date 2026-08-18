@@ -64,7 +64,7 @@ npm install @arrowood.dev/socket
 
 ## API
 
-### `createRedis(options: CreateRedisOptions | string): Redis`
+### `createRedis(options: RedisOptions | string): Redis`
 
 Create a Redis client. It connects when you send the first command.
 
@@ -72,7 +72,7 @@ Create a Redis client. It connects when you send the first command.
 - `redis.sendRaw(...command)`: send a command, keep bulk strings as `Uint8Array`.
 - `redis.close()`: close the connection. The next `send` reconnects.
 
-### `CreateRedisOptions`
+### `RedisOptions`
 
 - `url` (string): The URL of the Redis server.
 - `tls` (boolean): Whether to use TLS. Defaults to true for `rediss:` URLs.

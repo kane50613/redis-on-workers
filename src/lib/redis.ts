@@ -1,11 +1,11 @@
-import type { Command, CreateRedisOptions, RedisConnectConfig, RedisResponse } from "~/type";
+import type { Command, RedisOptions, RedisConnectConfig, RedisResponse } from "~/type";
 import { Connection } from "~/lib/connection";
 import { encodeCommand } from "~/lib/utils/encode-command";
 import { stringifyResult } from "~/lib/utils/stringify-result";
 
 const connectionClosedError = new Error("Redis connection closed");
 
-function parseConnectConfig(options: CreateRedisOptions): RedisConnectConfig {
+function parseConnectConfig(options: RedisOptions): RedisConnectConfig {
   if ("url" in options) {
     const { hostname, port, username, password, pathname, protocol } = new URL(options.url);
 
@@ -46,7 +46,7 @@ export class Redis {
   private connection?: Promise<Connection>;
   private pending: PromiseWithResolvers<RedisResponse>[] = [];
 
-  constructor(private options: CreateRedisOptions) {
+  constructor(private options: RedisOptions) {
     this.config = parseConnectConfig(options);
   }
 

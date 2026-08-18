@@ -1,6 +1,6 @@
 import type { connect as nodeConnect } from "@arrowood.dev/socket";
 import type { connect } from "cloudflare:sockets";
-import type { CreateRedisOptions, RedisConnectConfig, RedisResponse } from "~/type";
+import type { RedisOptions, RedisConnectConfig, RedisResponse } from "~/type";
 import { decodeResp, type RespReader } from "~/lib/resp";
 import { getConnectFn } from "~/lib/utils/get-connect-fn";
 
@@ -31,7 +31,7 @@ export class Connection {
 
   static async open(
     config: RedisConnectConfig,
-    options: Pick<CreateRedisOptions, "connectFn" | "logger">,
+    options: Pick<RedisOptions, "connectFn" | "logger">,
   ) {
     const connectFn = await getConnectFn(options.connectFn);
 

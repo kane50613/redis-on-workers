@@ -13,7 +13,7 @@ export type StringifyRedisResponse =
   | string
   | StringifyRedisResponse[];
 
-/** The connection parameters resolved from `CreateRedisOptions`. */
+/** The connection parameters resolved from `RedisOptions`. */
 export interface RedisConnectConfig {
   hostname: string;
   port: number;
@@ -44,4 +44,4 @@ export type RedisConnectionOptions =
       database?: string;
     };
 
-export type CreateRedisOptions = BaseRedisOptions & RedisConnectionOptions;
+export type RedisOptions = BaseRedisOptions & RedisConnectionOptions;
