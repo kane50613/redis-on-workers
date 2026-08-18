@@ -1,6 +1,6 @@
 {
   "name": "redis-on-workers",
-  "version": "0.4.2",
+  "version": "0.5.0",
   "description": "Connect to your Redis server using cloudflare:sockets",
   "keywords": [
     "cloudflare",
