@@ -106,6 +106,9 @@ jobs:
       - name: Run build
         run: bun run build
 
+      - name: Install latest npm
+        run: bun install -g npm@latest
+
       - name: Publish packages
         run: bun tegami publish && bun tegami cleanup
         env:
